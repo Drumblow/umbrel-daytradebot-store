@@ -1,0 +1,32 @@
+manifestVersion: 1.1
+id: daytradebot-probe
+category: developer
+name: Day Trade Bot Probe
+version: "0.1.0"
+tagline: Temporary probe that validates umbrelOS app assumptions
+description: >-
+  Throwaway app used to validate three assumptions before packaging the day
+  trade bot as an umbrelOS app:
+
+
+  1. Whether `network_mode: host` survives umbreld's docker-compose merge.
+
+  2. Which variables umbreld injects into an app's compose (APP_SEED, APP_DATA_DIR).
+
+  3. Whether container naming follows the `${app}_${service}_1` scheme.
+
+
+  It runs a Postgres on port 5434 (deliberately not 5433, which the live bot
+  uses) and a probe container that dumps its own environment to a file. It
+  stores nothing of value and is meant to be uninstalled once checked.
+developer: Drumblow
+website: https://github.com/Drumblow/umbrel-daytradebot-store
+dependencies: []
+repo: https://github.com/Drumblow/umbrel-daytradebot-store
+support: https://github.com/Drumblow/umbrel-daytradebot-store/issues
+port: 5434
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+releaseNotes: ""

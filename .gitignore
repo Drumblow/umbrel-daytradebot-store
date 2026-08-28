@@ -1,0 +1,29 @@
+# Este repositorio e PUBLICO. Nada abaixo pode ser versionado — ver README.
+# Estes padroes sao uma rede de seguranca, nao a defesa principal: o desenho e
+# que segredo nenhum exista neste diretorio.
+
+*.env
+!*.env.template
+.env*
+!.env.template
+
+# Credenciais do IBC / IB Gateway
+ibc.ini
+!ibc.ini.template
+*.jks
+*.p12
+*.pem
+*.key
+
+# Chaves e tokens
+id_rsa*
+id_ed25519*
+*credentials*
+*secret*
+!*secret*.template
+
+# Instaladores da IBKR (nao redistribuimos binario deles)
+ibgateway*/
+*.jar
+*.tgz
+*.tar.gz

@@ -1,0 +1,69 @@
+# Probe da fase 0 (ADR-013). Descartável.
+#
+# Valida tres coisas antes de empacotar o bot de verdade:
+#   1. `network_mode: host` sobrevive ao merge de compose do umbreld
+#   2. quais variaveis o umbreld injeta (APP_SEED, APP_DATA_DIR, APP_ID)
+#   3. o esquema de nome dos containers (${app}_${service}_1)
+#
+# Porta 5434 de proposito: 5433 e do Postgres do bot que esta em producao.
+# Nenhum dado sensivel aqui — a senha vem do APP_SEED derivado pelo umbreld.
+
+version: "3.7"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    # Mesmo modo de rede que o bot usa hoje. Se o umbreld quebrar isso,
+    # o plano do ADR-013 muda inteiro — e essa e a pergunta da fase 0.
+    network_mode: host
+    restart: on-failure
+    environment:
+      POSTGRES_USER: probe
+      POSTGRES_PASSWORD: ${APP_SEED}
+      POSTGRES_DB: probe
+    command: >-
+      postgres
+      -p 5434
+      -c listen_addresses=127.0.0.1
+    volumes:
+      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U probe -d probe -p 5434"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Sem network_mode: deve cair na umbrel_main_network (bridge).
+  # Assim o mesmo app testa os dois modos de rede de uma vez.
+  probe:
+    image: alpine:3.20
+    restart: on-failure
+    volumes:
+      - ${APP_DATA_DIR}:/appdata
+    environment:
+      PROBE_APP_ID: ${APP_ID}
+      PROBE_APP_DATA_DIR: ${APP_DATA_DIR}
+      PROBE_APP_VERSION: ${APP_VERSION}
+      PROBE_APP_SEED: ${APP_SEED}
+      PROBE_APP_PASSWORD: ${APP_PASSWORD}
+      PROBE_DEVICE_DOMAIN: ${DEVICE_DOMAIN_NAME}
+    command:
+      - sh
+      - -c
+      - |
+        # Segredos sao gravados so como comprimento — o arquivo fica no disco
+        # do usuario e nao precisa conter o valor para provar que chegou.
+        {
+          echo "boot_utc=$$(date -u +%FT%TZ)"
+          echo "hostname=$$(hostname)"
+          echo "APP_ID=$$PROBE_APP_ID"
+          echo "APP_DATA_DIR=$$PROBE_APP_DATA_DIR"
+          echo "APP_VERSION=$$PROBE_APP_VERSION"
+          echo "DEVICE_DOMAIN_NAME=$$PROBE_DEVICE_DOMAIN"
+          echo "APP_SEED_len=$${#PROBE_APP_SEED}"
+          echo "APP_PASSWORD_len=$${#PROBE_APP_PASSWORD}"
+          echo "ip=$$(ip -4 addr show scope global | awk '/inet /{print $$2}' | tr '\n' ' ')"
+        } > /appdata/probe-env.txt
+        cat /appdata/probe-env.txt
+        # Fica vivo para dar para inspecionar com docker exec
+        exec sleep infinity
