@@ -45,6 +45,10 @@ TWSPASSWORD=
 EOF
 fi
 chmod 600 "$SECRETS"
+# O container do gateway roda como uid 1001 e le este diretorio por volume.
+# Sem o chown ele bate em "credenciais ausentes" mesmo com o arquivo preenchido
+# — foi o que aconteceu no cutover de 2026-08-28.
+chown -R 1001:1001 "$APP_DATA_DIR/secrets"
 chmod 700 "$APP_DATA_DIR/secrets"
 
 # ── instalador do IB Gateway ─────────────────────────────────────────────────
