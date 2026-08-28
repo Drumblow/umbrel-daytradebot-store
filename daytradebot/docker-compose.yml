@@ -67,6 +67,11 @@ services:
       # redistribui binario da Interactive Brokers.
       - ${APP_DATA_DIR}/gateway/ibgateway:/opt/trader/ibgateway:ro
       - ${APP_DATA_DIR}/gateway/gateway-settings:/opt/trader/gateway-settings
+      # jts.ini na raiz do TWS_PATH: e daqui que o Gateway le as preferencias
+      # ja respondidas (SSL, proxy). Sem ele o Gateway abre o dialogo "Use SSL
+      # encryption" dentro do Xvfb, onde ninguem pode clicar, e a API nunca sobe.
+      # Descoberto no cutover de 2026-08-28.
+      - ${APP_DATA_DIR}/gateway/jts.ini:/opt/trader/jts.ini
       - ${APP_DATA_DIR}/logs/ibc:/opt/trader/logs/ibc
       # Credenciais IBKR, so leitura. O entrypoint carrega e falha com mensagem
       # clara se estiverem faltando.
