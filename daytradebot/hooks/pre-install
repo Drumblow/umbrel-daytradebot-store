@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Roda ANTES do compose pull / up (app-script:519), que e o unico momento em que
+# da para preparar o disco antes do primeiro start.
+#
+# Atencao: o umbreld so exporta APP_DATA_DIR depois deste hook (source_app roda
+# na linha seguinte), entao derivamos o caminho da propria localizacao do script.
+set -euo pipefail
+
+APP_DATA_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+mkdir -p \
+  "$APP_DATA_DIR/data/postgres" \
+  "$APP_DATA_DIR/gateway/ibgateway" \
+  "$APP_DATA_DIR/gateway/gateway-settings" \
+  "$APP_DATA_DIR/logs/ibc" \
+  "$APP_DATA_DIR/backups" \
+  "$APP_DATA_DIR/secrets"
+
+# uid 1001 = usuario trader dentro do container do gateway
+chown -R 1001:1001 \
+  "$APP_DATA_DIR/gateway" \
+  "$APP_DATA_DIR/logs" 2>/dev/null || true
+
+# ── credenciais IBKR ─────────────────────────────────────────────────────────
+# Criado vazio. O container do gateway falha com uma mensagem explicita enquanto
+# nao estiver preenchido — melhor do que subir e morrer num dialogo de login
+# invisivel dentro do Xvfb.
+SECRETS="$APP_DATA_DIR/secrets/ibkr.env"
+if [[ ! -f "$SECRETS" ]]; then
+  cat > "$SECRETS" <<'EOF'
+# Credenciais da Interactive Brokers.
+#
+# Este arquivo fica SO neste dispositivo: nao vai para o repositorio da app
+# store, nao entra na imagem publicada e nao e enviado a lugar nenhum. O
+# container do gateway le em runtime e mantem so em memoria.
+#
+# Preencha e reinicie a app.
+
+TWSUSERID=
+TWSPASSWORD=
+EOF
+fi
+chmod 600 "$SECRETS"
+chmod 700 "$APP_DATA_DIR/secrets"
+
+# ── instalador do IB Gateway ─────────────────────────────────────────────────
+GW="$APP_DATA_DIR/gateway/ibgateway/1045"
+if [[ ! -d "$GW" ]]; then
+  cat >&2 <<EOF
+
+  ┌─ Day Trade Bot ────────────────────────────────────────────────────────┐
+    Faltam duas coisas antes da app conseguir operar:
+
+      1. credenciais IBKR em
+         $SECRETS
+
+      2. o IB Gateway 10.45 instalado em
+         $GW
+
+    A app nao redistribui o instalador da Interactive Brokers — baixe da
+    IBKR e instale nesse diretorio. Ate la, o container do gateway vai
+    reiniciar informando o que falta.
+  └────────────────────────────────────────────────────────────────────────┘
+
+EOF
+fi
+
+echo "[daytradebot] estrutura de dados preparada em $APP_DATA_DIR"

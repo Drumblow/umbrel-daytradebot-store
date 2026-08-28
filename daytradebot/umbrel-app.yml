@@ -1,0 +1,71 @@
+manifestVersion: 1.1
+id: daytradebot
+category: finance
+name: Day Trade Bot
+version: "1.0.0"
+tagline: Automated intraday trading on Interactive Brokers
+description: >-
+  An automated intraday trading system that runs eleven independent strategy
+  instances against a single Interactive Brokers Gateway session, on US
+  small- and mid-cap ETFs.
+
+
+  Each instance pairs one symbol with one strategy, keeps its own IBKR client
+  connection, and writes every signal, order, fill and trade to a local
+  Postgres database. Nothing leaves your device.
+
+
+  ## What it runs
+
+
+  - **Trading window** — instances start at 09:25 and stop at 16:10 New York
+    time, Monday to Friday. Outside that window nothing connects to IBKR.
+
+  - **Strategies** — pullback-trend, balance-area-breakout, opening-reversal
+    and range-extreme-fade, each promoted only after passing a documented
+    backtest gate.
+
+  - **Risk** — every entry carries a broker-side stop and target, so an open
+    position stays protected even if the app is stopped.
+
+
+  ## Before you start
+
+
+  This app needs two things you must provide yourself:
+
+
+  1. **Your Interactive Brokers credentials**, written to
+     `secrets/ibkr.env` inside the app's data folder. They stay on your device.
+
+  2. **The IB Gateway installer**, placed in `gateway/ibgateway/1045/`. The app
+     does not redistribute Interactive Brokers software.
+
+
+  The app will refuse to start and tell you exactly what is missing until both
+  are in place.
+
+
+  ## This trades real orders
+
+
+  Configured for a paper account by default. Point it at a live account and it
+  will place live orders with real money. Understand the strategies before you
+  do that.
+developer: Drumblow
+website: https://github.com/Drumblow/umbrel-daytradebot-store
+dependencies: []
+repo: https://github.com/Drumblow/umbrel-daytradebot-store
+support: https://github.com/Drumblow/umbrel-daytradebot-store/issues
+port: 4002
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+releaseNotes: >-
+  First packaged release. Moves the bot off host systemd timers and into the
+  umbrelOS app lifecycle, so it survives a reboot without manual recovery.
+backupIgnore:
+  - data/postgres
+  - logs
+  - gateway/ibgateway

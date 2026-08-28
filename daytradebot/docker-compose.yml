@@ -1,0 +1,191 @@
+# Day Trade Bot — app do umbrelOS (ADR-013 do repositorio do bot).
+#
+# 14 containers: postgres + gateway + scheduler + 11 instancias de estrategia.
+#
+# REDE: network_mode host, igual ao que rodava no host antes da migracao.
+# Postgres em 127.0.0.1:5433 e Gateway em 127.0.0.1:4002. Foi mantido assim de
+# proposito: o jts.ini do Gateway tem TrustedIPs=127.0.0.1, entao mudar para a
+# umbrel_main_network exigiria reconfigurar o Gateway e revalidar as 11 conexoes
+# de API — uma segunda mudanca de risco empilhada na migracao. Fica para depois.
+# (Validado na fase 0: os dois modos de rede convivem no mesmo app, entao a
+# migracao para bridge pode ser feita servico a servico.)
+#
+# SEGREDOS: nenhum aqui. A senha do Postgres e derivada do ${APP_SEED} do
+# umbrelOS, e as credenciais da IBKR sao lidas em runtime de
+# ${APP_DATA_DIR}/secrets/ibkr.env, que so existe no dispositivo do usuario.
+
+version: "3.7"
+
+x-instance: &instance
+  image: ghcr.io/drumblow/trader-bot:latest
+  # on-failure, nao unless-stopped: a instancia sai com 0 quando esta fora da
+  # janela de pregao, e nesse caso precisa FICAR parada ate o scheduler liga-la.
+  # Um bot que quebra de verdade sai != 0 e reinicia.
+  restart: on-failure
+  network_mode: host
+  depends_on:
+    - postgres
+    - gateway
+
+x-instance-env: &instance-env
+  DATABASE_URL: postgres://trader:${APP_SEED}@127.0.0.1:5433/trader_db
+  TRADER__IBKR__HOST: 127.0.0.1
+  TRADER__IBKR__PORT: 4002
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: on-failure
+    network_mode: host
+    environment:
+      POSTGRES_USER: trader
+      POSTGRES_PASSWORD: ${APP_SEED}
+      POSTGRES_DB: trader_db
+    command: >-
+      postgres
+      -p 5433
+      -c listen_addresses=127.0.0.1
+      -c shared_buffers=256MB
+      -c effective_cache_size=768MB
+      -c work_mem=8MB
+      -c maintenance_work_mem=64MB
+      -c max_connections=100
+    volumes:
+      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trader -d trader_db -p 5433"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  gateway:
+    image: ghcr.io/drumblow/trader-gateway:latest
+    restart: always
+    network_mode: host
+    volumes:
+      # Instalacao do IB Gateway fornecida pelo usuario — a imagem publica nao
+      # redistribui binario da Interactive Brokers.
+      - ${APP_DATA_DIR}/gateway/ibgateway:/opt/trader/ibgateway:ro
+      - ${APP_DATA_DIR}/gateway/gateway-settings:/opt/trader/gateway-settings
+      - ${APP_DATA_DIR}/logs/ibc:/opt/trader/logs/ibc
+      # Credenciais IBKR, so leitura. O entrypoint carrega e falha com mensagem
+      # clara se estiverem faltando.
+      - ${APP_DATA_DIR}/secrets:/run/trader-secrets:ro
+    environment:
+      TRADING_MODE: paper
+    mem_limit: 1g
+    # O Chromium do JxBrowser precisa de /dev/shm maior que os 64MB padrao
+    shm_size: 256m
+
+  scheduler:
+    image: ghcr.io/drumblow/trader-scheduler:latest
+    restart: on-failure
+    volumes:
+      # Liga e desliga as instancias irmas. E o mesmo nivel de acesso que os
+      # timers systemd tinham com sudo no host.
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${APP_DATA_DIR}/backups:/backups
+    environment:
+      POSTGRES_CONTAINER: daytradebot_postgres_1
+      INSTANCES: >-
+        daytradebot_iwm-pullback_1 daytradebot_iwv-pullback_1
+        daytradebot_iwo-pullback_1 daytradebot_ijs-balance_1
+        daytradebot_vbr-balance_1 daytradebot_avuv-balance_1
+        daytradebot_iwm-openrev_1 daytradebot_iwn-openrev_1
+        daytradebot_avuv-rangefade_1 daytradebot_slyv-rangefade_1
+        daytradebot_iwv-rangefade_1
+    depends_on:
+      - postgres
+
+  # ── 11 instancias ────────────────────────────────────────────────────────────
+  # client_id 1-11 para market data; o codigo deriva +100 para broker e +200 para
+  # o poll de execucao. O client_id 99 e reservado para diagnostico manual e
+  # NUNCA deve ser usado por uma instancia.
+
+  iwm-pullback:
+    <<: *instance
+    environment:
+      <<: *instance-env
+      SYMBOL: IWM
+      STRATEGY: pullback-trend-v1
+      TRADER__IBKR__CLIENT_ID: 1
+
+  iwv-pullback:
+    <<: *instance
+    environment:
+      <<: *instance-env
+      SYMBOL: IWV
+      STRATEGY: pullback-trend-v1
+      TRADER__IBKR__CLIENT_ID: 2
+
+  iwo-pullback:
+    <<: *instance
+    environment:
+      <<: *instance-env
+      SYMBOL: IWO
+      STRATEGY: pullback-trend-v1
+      TRADER__IBKR__CLIENT_ID: 3
+
+  ijs-balance:
+    <<: *instance
+    environment:
+      <<: *instance-env
+      SYMBOL: IJS
+      STRATEGY: balance-area-breakout-v1
+      TRADER__IBKR__CLIENT_ID: 4
+
+  vbr-balance:
+    <<: *instance
+    environment:
+      <<: *instance-env
+      SYMBOL: VBR
+      STRATEGY: balance-area-breakout-v1
+      TRADER__IBKR__CLIENT_ID: 5
+
+  avuv-balance:
+    <<: *instance
+    environment:
+      <<: *instance-env
+      SYMBOL: AVUV
+      STRATEGY: balance-area-breakout-v1
+      TRADER__IBKR__CLIENT_ID: 6
+
+  iwm-openrev:
+    <<: *instance
+    environment:
+      <<: *instance-env
+      SYMBOL: IWM
+      STRATEGY: opening-reversal-v1
+      TRADER__IBKR__CLIENT_ID: 7
+
+  iwn-openrev:
+    <<: *instance
+    environment:
+      <<: *instance-env
+      SYMBOL: IWN
+      STRATEGY: opening-reversal-v1
+      TRADER__IBKR__CLIENT_ID: 8
+
+  avuv-rangefade:
+    <<: *instance
+    environment:
+      <<: *instance-env
+      SYMBOL: AVUV
+      STRATEGY: range-extreme-fade-v1
+      TRADER__IBKR__CLIENT_ID: 9
+
+  slyv-rangefade:
+    <<: *instance
+    environment:
+      <<: *instance-env
+      SYMBOL: SLYV
+      STRATEGY: range-extreme-fade-v1
+      TRADER__IBKR__CLIENT_ID: 10
+
+  iwv-rangefade:
+    <<: *instance
+    environment:
+      <<: *instance-env
+      SYMBOL: IWV
+      STRATEGY: range-extreme-fade-v1
+      TRADER__IBKR__CLIENT_ID: 11
