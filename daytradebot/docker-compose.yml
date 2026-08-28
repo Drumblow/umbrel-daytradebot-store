@@ -97,6 +97,25 @@ services:
     depends_on:
       - postgres
 
+  runner:
+    # Runner self-hosted do GitHub Actions. Antes era um servico systemd em /etc,
+    # apagado a cada boot pelo rugix — o CI ficava mudo ate alguem reinstalar.
+    #
+    # E tambem o unico acesso administrativo ao host que sobrevive a um reboot,
+    # ja que o usuario trader e o sudoers dele nao sobrevivem.
+    image: ghcr.io/drumblow/trader-runner:latest
+    restart: on-failure
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${APP_DATA_DIR}/runner:/home/runner/config
+      # So leitura: o deploy precisa do compose, nao precisa altera-lo.
+      - ${APP_DATA_DIR}:/appdata:ro
+    environment:
+      # Caminhos do HOST — o docker do runner fala com o daemon do host, entao
+      # os binds do compose precisam resolver na perspectiva dele.
+      APP_DATA_DIR: ${APP_DATA_DIR}
+      APP_SEED: ${APP_SEED}
+
   # ── 11 instancias ────────────────────────────────────────────────────────────
   # client_id 1-11 para market data; o codigo deriva +100 para broker e +200 para
   # o poll de execucao. O client_id 99 e reservado para diagnostico manual e

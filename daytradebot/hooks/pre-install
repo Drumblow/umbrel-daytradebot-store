@@ -14,12 +14,16 @@ mkdir -p \
   "$APP_DATA_DIR/gateway/gateway-settings" \
   "$APP_DATA_DIR/logs/ibc" \
   "$APP_DATA_DIR/backups" \
-  "$APP_DATA_DIR/secrets"
+  "$APP_DATA_DIR/secrets" \
+  "$APP_DATA_DIR/runner/_work"
 
 # uid 1001 = usuario trader dentro do container do gateway
 chown -R 1001:1001 \
   "$APP_DATA_DIR/gateway" \
   "$APP_DATA_DIR/logs" 2>/dev/null || true
+
+# uid 1002 = usuario runner dentro do container do runner
+chown -R 1002:1002 "$APP_DATA_DIR/runner" 2>/dev/null || true
 
 # ── credenciais IBKR ─────────────────────────────────────────────────────────
 # Criado vazio. O container do gateway falha com uma mensagem explicita enquanto
