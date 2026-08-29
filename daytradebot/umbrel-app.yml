@@ -6,7 +6,7 @@ name: Day Trade Bot
 # (getumbrel.github.io/umbrel-apps-gallery/<id>/icon.svg), que nao existe
 # para app de store comunitaria — e o icone aparece quebrado na dashboard.
 icon: https://raw.githubusercontent.com/Drumblow/umbrel-daytradebot-store/master/daytradebot/icon.svg
-version: "1.1.0"
+version: "1.1.1"
 tagline: Automated intraday trading on Interactive Brokers
 description: >-
   An automated intraday trading system that runs eleven independent strategy

@@ -23,6 +23,10 @@ x-instance: &instance
   # Um bot que quebra de verdade sai != 0 e reinicia.
   restart: on-failure
   network_mode: host
+  volumes:
+    # Segredos do dispositivo (so leitura). O entrypoint carrega o webhook de
+    # alertas de alerts.env, se preenchido — nada disso entra em imagem/repo.
+    - ${APP_DATA_DIR}/secrets:/run/trader-secrets:ro
   depends_on:
     - postgres
     - gateway

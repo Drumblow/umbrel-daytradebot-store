@@ -45,6 +45,23 @@ TWSPASSWORD=
 EOF
 fi
 chmod 600 "$SECRETS"
+
+# ── webhook de alertas (opcional) ────────────────────────────────────────────
+# Preenchido, faz o bot avisar (Slack/Discord/Teams: POST {"text": ...}) quando
+# um circuit breaker disparar ou o live parar. Vazio = alertas so nos logs.
+ALERTS="$APP_DATA_DIR/secrets/alerts.env"
+if [[ ! -f "$ALERTS" ]]; then
+  cat > "$ALERTS" <<'EOF'
+# Webhook de alertas criticos do bot (opcional).
+#
+# Cole a URL de um webhook Slack/Discord/Teams (formato POST {"text": "..."})
+# e reinicie a app. Este arquivo fica so neste dispositivo.
+
+TRADER__ALERTS__WEBHOOK_URL=
+EOF
+fi
+chmod 600 "$ALERTS"
+
 # O container do gateway roda como uid 1001 e le este diretorio por volume.
 # Sem o chown ele bate em "credenciais ausentes" mesmo com o arquivo preenchido
 # — foi o que aconteceu no cutover de 2026-08-28.
