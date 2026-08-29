@@ -6,7 +6,7 @@ name: Day Trade Bot
 # (getumbrel.github.io/umbrel-apps-gallery/<id>/icon.svg), que nao existe
 # para app de store comunitaria — e o icone aparece quebrado na dashboard.
 icon: https://raw.githubusercontent.com/Drumblow/umbrel-daytradebot-store/master/daytradebot/icon.svg
-version: "1.0.0"
+version: "1.1.0"
 tagline: Automated intraday trading on Interactive Brokers
 description: >-
   An automated intraday trading system that runs eleven independent strategy
@@ -31,6 +31,10 @@ description: >-
 
   - **Risk** — every entry carries a broker-side stop and target, so an open
     position stays protected even if the app is stopped.
+
+  - **Status dashboard** — opening the app shows a read-only panel with P&L,
+    per-instance health, signals (including why entries were rejected), orders
+    and system events, read straight from the local database.
 
 
   ## Before you start
@@ -61,14 +65,19 @@ website: https://github.com/Drumblow/umbrel-daytradebot-store
 dependencies: []
 repo: https://github.com/Drumblow/umbrel-daytradebot-store
 support: https://github.com/Drumblow/umbrel-daytradebot-store/issues
-port: 4002
+# Porta do painel web (trader-web). E o que abre ao clicar no app na dashboard
+# do umbrel. A API do Gateway (4002) e o Postgres (5433) continuam existindo em
+# rede de host, mas nao sao a cara do app.
+port: 8551
 gallery: []
 path: ""
 defaultUsername: ""
 defaultPassword: ""
 releaseNotes: >-
-  First packaged release. Moves the bot off host systemd timers and into the
-  umbrelOS app lifecycle, so it survives a reboot without manual recovery.
+  Adds the status dashboard: opening the app now shows a read-only web panel
+  with P&L, per-instance health, signals (including why entries were rejected),
+  orders, fills, system events and backtest history — all read straight from
+  the local Postgres. Nothing leaves your device.
 backupIgnore:
   - data/postgres
   - logs

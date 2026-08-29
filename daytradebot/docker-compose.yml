@@ -1,6 +1,6 @@
 # Day Trade Bot — app do umbrelOS (ADR-013 do repositorio do bot).
 #
-# 14 containers: postgres + gateway + scheduler + 11 instancias de estrategia.
+# 15 containers: postgres + gateway + scheduler + runner + web + 11 instancias.
 #
 # REDE: network_mode host, igual ao que rodava no host antes da migracao.
 # Postgres em 127.0.0.1:5433 e Gateway em 127.0.0.1:4002. Foi mantido assim de
@@ -120,6 +120,21 @@ services:
       # os binds do compose precisam resolver na perspectiva dele.
       APP_DATA_DIR: ${APP_DATA_DIR}
       APP_SEED: ${APP_SEED}
+
+  # Painel de status (ADR-014 do repositorio do bot). Read-only: le o Postgres
+  # com default_transaction_read_only=on e nao fala com o broker. E a UI que o
+  # umbrelOS abre ao clicar no app (port 8551 no manifesto). Roda 24/7 como o
+  # postgres — fora do pregao o painel continua util (historico, eventos).
+  web:
+    image: ghcr.io/drumblow/trader-web:latest
+    restart: on-failure
+    network_mode: host
+    environment:
+      DATABASE_URL: postgres://trader:${APP_SEED}@127.0.0.1:5433/trader_db
+      TRADER_WEB_BIND: 0.0.0.0:8551
+      TRADER_WEB_GATEWAY_ADDR: 127.0.0.1:4002
+    depends_on:
+      - postgres
 
   # ── 11 instancias ────────────────────────────────────────────────────────────
   # client_id 1-11 para market data; o codigo deriva +100 para broker e +200 para
