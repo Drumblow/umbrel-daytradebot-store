@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1b2436"/>
+      <stop offset="1" stop-color="#0d1220"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="56" fill="url(#bg)"/>
+
+  <!-- Candles. Verde sobe, vermelho desce: a leitura tem que funcionar a 32px,
+       entao sao poucos corpos, largos, com pavios curtos. -->
+  <g stroke-linecap="round">
+    <!-- baixa -->
+    <g stroke="#e5484d" fill="#e5484d">
+      <line x1="76" y1="86" x2="76" y2="176" stroke-width="8"/>
+      <rect x="62" y="104" width="28" height="54" rx="6"/>
+    </g>
+    <!-- alta -->
+    <g stroke="#30a46c" fill="#30a46c">
+      <line x1="128" y1="62" x2="128" y2="164" stroke-width="8"/>
+      <rect x="114" y="80" width="28" height="66" rx="6"/>
+    </g>
+    <!-- alta menor -->
+    <g stroke="#30a46c" fill="#30a46c">
+      <line x1="180" y1="98" x2="180" y2="192" stroke-width="8"/>
+      <rect x="166" y="118" width="28" height="52" rx="6"/>
+    </g>
+  </g>
+
+  <!-- Linha de tendencia: da o sentido de "automatizado" sem virar poluicao -->
+  <path d="M52 178 L104 140 L156 152 L206 96"
+        fill="none" stroke="#7c8cff" stroke-width="9"
+        stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+  <circle cx="206" cy="96" r="12" fill="#7c8cff"/>
+</svg>

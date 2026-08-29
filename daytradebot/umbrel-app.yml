@@ -2,6 +2,10 @@ manifestVersion: 1.1
 id: daytradebot
 category: finance
 name: Day Trade Bot
+# Sem este campo o umbreld cai num caminho da galeria oficial
+# (getumbrel.github.io/umbrel-apps-gallery/<id>/icon.svg), que nao existe
+# para app de store comunitaria — e o icone aparece quebrado na dashboard.
+icon: https://raw.githubusercontent.com/Drumblow/umbrel-daytradebot-store/master/daytradebot/icon.svg
 version: "1.0.0"
 tagline: Automated intraday trading on Interactive Brokers
 description: >-
