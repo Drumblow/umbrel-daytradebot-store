@@ -23,6 +23,11 @@ x-instance: &instance
   # Um bot que quebra de verdade sai != 0 e reinicia.
   restart: on-failure
   network_mode: host
+  # Folga para o encerramento gracioso. O padrao do docker e 10s, e o laco do
+  # live so acorda a cada 30s — em 04/09/2026 nove das onze instancias foram
+  # mortas antes de registrar `live_stopped`. O binario passou a acordar na
+  # hora do sinal; isto aqui e o cinto de seguranca do outro lado.
+  stop_grace_period: 45s
   volumes:
     # Segredos do dispositivo (so leitura). O entrypoint carrega o webhook de
     # alertas de alerts.env, se preenchido — nada disso entra em imagem/repo.
@@ -94,11 +99,16 @@ services:
       # timers systemd tinham com sudo no host.
       - /var/run/docker.sock:/var/run/docker.sock
       - ${APP_DATA_DIR}/backups:/backups
+      # Webhook de alertas (so leitura). O scheduler detectava backup falhado e
+      # "subiram 7 de 11 no open" e so escrevia no proprio log — A9 da auditoria.
+      - ${APP_DATA_DIR}/secrets:/run/trader-secrets:ro
     environment:
       POSTGRES_CONTAINER: daytradebot_postgres_1
+      # ADR-016: as tres instancias da pullback-trend-v1 sairam. Com custo de
+      # execucao realista (2 bp) a estrategia fica NEGATIVA nos tres ativos —
+      # e o edge dela tem a mesma ordem de grandeza do spread.
       INSTANCES: >-
-        daytradebot_iwm-pullback_1 daytradebot_iwv-pullback_1
-        daytradebot_iwo-pullback_1 daytradebot_ijs-balance_1
+        daytradebot_ijs-balance_1
         daytradebot_vbr-balance_1 daytradebot_avuv-balance_1
         daytradebot_iwm-openrev_1 daytradebot_iwn-openrev_1
         daytradebot_avuv-rangefade_1 daytradebot_slyv-rangefade_1
@@ -147,6 +157,10 @@ services:
 
   iwm-pullback:
     <<: *instance
+    # DESLIGADA pelo ADR-016. O profile mantem o servico declarado (o
+    # historico no banco continua fazendo sentido) mas fora de qualquer
+    # `docker compose up` — inclusive o que o umbreld faz no boot.
+    profiles: [desativado]
     environment:
       <<: *instance-env
       SYMBOL: IWM
@@ -155,6 +169,10 @@ services:
 
   iwv-pullback:
     <<: *instance
+    # DESLIGADA pelo ADR-016. O profile mantem o servico declarado (o
+    # historico no banco continua fazendo sentido) mas fora de qualquer
+    # `docker compose up` — inclusive o que o umbreld faz no boot.
+    profiles: [desativado]
     environment:
       <<: *instance-env
       SYMBOL: IWV
@@ -163,6 +181,10 @@ services:
 
   iwo-pullback:
     <<: *instance
+    # DESLIGADA pelo ADR-016. O profile mantem o servico declarado (o
+    # historico no banco continua fazendo sentido) mas fora de qualquer
+    # `docker compose up` — inclusive o que o umbreld faz no boot.
+    profiles: [desativado]
     environment:
       <<: *instance-env
       SYMBOL: IWO
